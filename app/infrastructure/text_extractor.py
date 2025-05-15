@@ -5,13 +5,13 @@ import time
 from typing import List
 from fastapi import UploadFile
 
-class TextractReader:
+class TextExtractor:
     def __init__(self, region_name: str = "us-east-2", bucket_name: str = "melichallegebucket"):
         self.textract = boto3.client("textract", region_name=region_name)
         self.s3 = boto3.client("s3", region_name=region_name)
         self.bucket_name = bucket_name
 
-    async def upload_file_to_s3(self, file: UploadFile, folder: str = "uploads") -> str:
+    async def upload_file_to_bucket(self, file: UploadFile, folder: str = "uploads") -> str:
         key = f"{folder}/{file.filename}"
         contents = await file.read()
         self.s3.put_object(Bucket=self.bucket_name, Key=key, Body=contents)
@@ -43,7 +43,7 @@ class TextractReader:
         # Subir archivos y preparar lista de keys
         file_keys = []
         for file in files:
-            key = await self.upload_file_to_s3(file, folder)
+            key = await self.upload_file_to_bucket(file, folder)
             file_keys.append(key)
 
         loop = asyncio.get_event_loop()
