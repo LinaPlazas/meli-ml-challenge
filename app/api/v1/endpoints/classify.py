@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.services.document_classifier import DocumentClassifier
 from app.infrastructure.textract_reader import TextractReader
 from app.domain.entities.document import Document
+from typing import List
 
 router = APIRouter()
 
@@ -10,16 +11,17 @@ textract_reader = TextractReader()
 document_classifier = DocumentClassifier()
 
 @router.post("/classify")
-async def classify(file: UploadFile = File(...)):
-    content = await file.read()
+async def classify(files: List[UploadFile] = File(...)):
+    results = await textract_reader.process_files(files)
+    final_results = []
+    for item in results:
+        document = Document(text=item["text"])
+        classification = document_classifier.classify(document)
 
-    text = textract_reader.extract_text_from_pdf(content)
+        final_results.append({
+            "filename": item["filename"],
+            "category": classification.category,
+            "scores": classification.scores
+        })
 
-    document = Document(text=text)
-
-    result = document_classifier.classify(document)
-
-    return {
-        "category": result.category,
-        "scores": result.scores
-    }
+    return final_results
