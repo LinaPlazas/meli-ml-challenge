@@ -15,22 +15,18 @@ from app.exceptions.custom_exceptions import(
     PiiDetectionError,
     S3DownloadError,
     DuplicateDetectionError)
-import pandas as pd
 
 router = APIRouter(prefix="/documents")
 
 text_extractor = TextExtractor()
 document_classifier = DocumentClassifier()
 pii_detection_service= PiiDetectionService()
-duplicate_file_detector=DuplicateFileDetector(bucket_name="melichallegebucket")
-
+duplicate_file_detector=DuplicateFileDetector()
 
 @router.post("/extract-text")
-async def classify(files: List[UploadFile] = File(...)):
+async def extract_text(files: List[UploadFile] = File(...)):
     try:
         results = await text_extractor.process_files(files)
-        df = pd.DataFrame(results) ############ esto es para eliminar
-        df.to_csv("results.csv", index=False)
         return {
             "message": messages.SUCCESS_GENERIC,
             "data": results
@@ -45,19 +41,9 @@ async def classify(files: List[UploadFile] = File(...)):
         raise HTTPException(status_code=500, detail=f"{messages.FAILED_GENERIC} :{str(e)}")
 
 @router.post("/classify-text")
-async def classify():
+async def classify_text():
     try:
-        results = pd.read_csv("results.csv")
-        final_results = []
-        for index, item in results.iterrows():
-            document = Document(text=item["text"])
-            classification = document_classifier.classify_text(document)
-            final_results.append({
-                "filename": item["filename"],
-                "category": classification.category,
-                "scores": classification.scores
-            })
-
+        final_results = await document_classifier.classify_all_documents()
         return {
             "message": messages.SUCCESS_GENERIC,
             "data": final_results}
@@ -73,18 +59,19 @@ async def classify():
 @router.post("/detect-pii/")
 async def detect_pii():
     try:
-        texts=pd.read_csv("results.csv")["text"]
-        pii_data = [pii_detection_service.extract_pii(text) for text in texts]
-        return {"pii": pii_data}
+        pii_data = await pii_detection_service.detect_all_pii()
+        return {
+            "message": messages.SUCCESS_GENERIC,
+            "data": pii_data}
     except PiiDetectionError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{messages.FAILED_GENERIC} :{str(e)}")
 
-@router.get("/detect-documents-duplicates")
-def detectar_duplicados():
+@router.post("/detect-documents-duplicates")
+async def detect_duplicates():
     try:
-        resultado = duplicate_file_detector.encontrar_duplicados(prefix_s3="uploads/")
+        resultado = await duplicate_file_detector.find_duplicates()
         return resultado
     except S3DownloadError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)

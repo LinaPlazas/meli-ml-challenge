@@ -2,16 +2,21 @@ import boto3
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import time
+import os
 from typing import List
 from fastapi import UploadFile
 from app.exceptions.custom_exceptions import FileUploadError, TextractJobError,InvalidFileTypeError
 from botocore.exceptions import BotoCoreError, ClientError
+from app.config.db import MongoDB
 
 class TextExtractor:
-    def __init__(self, region_name: str = "us-east-2", bucket_name: str = "melichallegebucket"):
+    def __init__(self):
+        region_name = os.getenv("AWS_REGION", "us-east-2")
+        bucket_name = os.getenv("S3_BUCKET_NAME", "")
         self.textract = boto3.client("textract", region_name=region_name)
         self.s3 = boto3.client("s3", region_name=region_name)
         self.bucket_name = bucket_name
+        self.db= MongoDB()
 
     def validate_file_type(self, file: UploadFile) -> bool:
         allowed_extensions = ['pdf', 'jpg', 'jpeg', 'png']
@@ -64,19 +69,15 @@ class TextExtractor:
         for file in files:
             key = await self.upload_file_to_bucket(file, folder)
             file_keys.append(key)
-
         loop = asyncio.get_event_loop()
         results = []
-
         with ThreadPoolExecutor(max_workers=5) as executor:
             jobs = await asyncio.gather(
                 *(self.start_textract_job(file_key) for file_key in file_keys)
             )
-
             futures = []
             for job_id in jobs:
                 futures.append(loop.run_in_executor(executor, self.wait_for_job_result, job_id))
-
             texts = await asyncio.gather(*futures)
 
             for file_key, text in zip(file_keys, texts):
@@ -84,5 +85,6 @@ class TextExtractor:
                     "filename": file_key,
                     "text": text
                 })
-
+        if results:
+            await self.db.upsert_documents_by_filename(results)
         return results
