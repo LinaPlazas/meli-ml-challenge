@@ -1,5 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.services.document_classification_service import DocumentClassifier
+from app.services.pii_detection_service import PiiDetectionService
 from app.infrastructure.text_extractor import TextExtractor
 from app.domain.entities.document import Document
 from app.constants import messages
@@ -9,14 +10,15 @@ from app.exceptions.custom_exceptions import(
     TextractJobError,
     InvalidFileTypeError,
     DocumentClassificationError,
-    ModelLoadingError)
+    ModelLoadingError,
+    PiiDetectionError)
 import pandas as pd
 
 router = APIRouter(prefix="/documents")
 
-# Inicializar las instancias de las clases
 text_extractor = TextExtractor()
 document_classifier = DocumentClassifier()
+pii_detection_service= PiiDetectionService()
 
 @router.post("/extract-text")
 async def classify(files: List[UploadFile] = File(...)):
@@ -62,3 +64,12 @@ async def classify():
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{messages.FAILED_GENERIC} :{str(e)}")
+
+@router.post("/detect-pii/")
+async def detect_pii():
+    try:
+        texts=pd.read_csv("results.csv")["text"]
+        pii_data = [pii_detection_service.extract_pii(text) for text in texts]
+        return {"pii": pii_data}
+    except PiiDetectionError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
