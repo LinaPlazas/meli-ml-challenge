@@ -1,4 +1,4 @@
-FROM python:3.10
+FROM python:3.10-slim-bullseye
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -10,6 +10,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 COPY requirements.txt .
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libfuzzy-dev \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --no-cache-dir --progress-bar off -r requirements.txt
 

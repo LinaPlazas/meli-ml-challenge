@@ -29,3 +29,13 @@ class PiiDetectionError(Exception):
     def __init__(self, detail="Error detecting PII"):
         self.detail = detail
         self.status_code = status.HTTP_400_BAD_REQUEST
+
+class S3DownloadError(Exception):
+    def __init__(self, detail="Error downloading from S3"):
+        self.detail = detail
+        self.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+
+class DuplicateDetectionError(Exception):
+    def __init__(self, detail="Error detecting duplicates"):
+        self.detail = detail
+        self.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR

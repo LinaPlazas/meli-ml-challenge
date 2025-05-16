@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.services.document_classification_service import DocumentClassifier
 from app.services.pii_detection_service import PiiDetectionService
+from app.services.duplicate_document_detector import DuplicateFileDetector
 from app.infrastructure.text_extractor import TextExtractor
 from app.domain.entities.document import Document
 from app.constants import messages
@@ -11,7 +12,9 @@ from app.exceptions.custom_exceptions import(
     InvalidFileTypeError,
     DocumentClassificationError,
     ModelLoadingError,
-    PiiDetectionError)
+    PiiDetectionError,
+    S3DownloadError,
+    DuplicateDetectionError)
 import pandas as pd
 
 router = APIRouter(prefix="/documents")
@@ -19,6 +22,8 @@ router = APIRouter(prefix="/documents")
 text_extractor = TextExtractor()
 document_classifier = DocumentClassifier()
 pii_detection_service= PiiDetectionService()
+duplicate_file_detector=DuplicateFileDetector(bucket_name="melichallegebucket")
+
 
 @router.post("/extract-text")
 async def classify(files: List[UploadFile] = File(...)):
@@ -73,3 +78,17 @@ async def detect_pii():
         return {"pii": pii_data}
     except PiiDetectionError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{messages.FAILED_GENERIC} :{str(e)}")
+
+@router.get("/detect-documents-duplicates")
+def detectar_duplicados():
+    try:
+        resultado = duplicate_file_detector.encontrar_duplicados(prefix_s3="uploads/")
+        return resultado
+    except S3DownloadError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except DuplicateDetectionError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{messages.FAILED_GENERIC}: {str(e)}")
