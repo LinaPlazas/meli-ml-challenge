@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException,Body
 from app.services.document_classification_service import DocumentClassifier
 from app.services.pii_detection_service import PiiDetectionService
 from app.services.duplicate_document_detector import DuplicateFileDetector
@@ -6,7 +6,7 @@ from app.infrastructure.text_extractor import TextExtractor
 from app.services.normative_extractor_service import NormativeSectionService
 from app.domain.entities.document import Document
 from app.utils import messages
-from typing import List
+from typing import List,Optional
 from app.exceptions.custom_exceptions import(
     FileUploadError,
     TextractJobError,
@@ -44,12 +44,19 @@ async def extract_text(files: List[UploadFile] = File(...)):
         raise HTTPException(status_code=500, detail=f"{messages.FAILED_GENERIC} :{str(e)}")
 
 @router.post("/classify-text")
-async def classify_text():
+async def classify_text(
+    filenames: Optional[List[str]] = Body(
+        default=None,
+        example=["filename1.pdf", "filename2.pdf"],)):
     try:
-        final_results = await document_classifier.classify_all_documents()
+        if filenames:
+            final_results = await document_classifier.classify_documents_by_filenames(filenames)
+        else:
+            final_results = await document_classifier.classify_all_documents()
         return {
             "message": messages.SUCCESS_GENERIC,
-            "data": final_results}
+            "data": final_results
+        }
     except InvalidFileTypeError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except DocumentClassificationError as e:
@@ -60,9 +67,15 @@ async def classify_text():
         raise HTTPException(status_code=500, detail=f"{messages.FAILED_GENERIC} :{str(e)}")
 
 @router.post("/detect-pii/")
-async def detect_pii():
+async def detect_pii(
+    filenames: Optional[List[str]] = Body(
+        default=None,
+        example=["filename1.pdf", "filename2.pdf"],)):
     try:
-        pii_data = await pii_detection_service.detect_all_pii()
+        if filenames:
+            pii_data = await pii_detection_service.detect_pii_by_filenames(filenames)
+        else:
+            pii_data = await pii_detection_service.detect_all_pii()
         return {
             "message": messages.SUCCESS_GENERIC,
             "data": pii_data}
@@ -83,18 +96,24 @@ async def detect_duplicates():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{messages.FAILED_GENERIC}: {str(e)}")
 
-@router.post("/extract-normative-sections/")
-async def extract_normative_sections():
+@router.post("/extract-normative-sections")
+async def extract_normative_sections(
+    filenames: Optional[List[str]] = Body(
+        default=None,
+        example=["filename1.pdf", "filename2.pdf"])):
     try:
-        data = await normative_section_service.extract_all_normative_sections()
+        if filenames:
+            final_results = await normative_section_service.extract_normative_sections_by_filenames(filenames)
+        else:
+            final_results = await normative_section_service.extract_all_normative_sections()
+
         return {
             "message": messages.SUCCESS_GENERIC,
-            "data": data
+            "data": final_results
         }
     except NormativeSectionError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
+        raise HTTPException(status_code=500,
             detail=f"{messages.FAILED_GENERIC}: {str(e)}"
         )

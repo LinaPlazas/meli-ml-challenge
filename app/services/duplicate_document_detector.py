@@ -13,7 +13,7 @@ class DuplicateFileDetector:
     def __init__(self):
         self.bucket_name = os.getenv("S3_BUCKET_NAME", "")
         aws_region = os.getenv("AWS_REGION", "us-east-2")
-        self.prefix = os.getenv("S3_PREFIX", "uploadss/")
+        self.prefix = os.getenv("S3_PREFIX", "uploads/")
         self.s3 = boto3.client("s3", region_name=aws_region)
         self.db = MongoDB()
 
@@ -81,13 +81,11 @@ class DuplicateFileDetector:
                 {"$set": {"exact_duplicates": [], "similar_files": []}},
                 upsert=True
             )
-
         for a, b in exact_duplicates:
             if a in s3_files:
                 await collection.update_one({"filename": a}, {"$addToSet": {"exact_duplicates": b}}, upsert=True)
             if b in s3_files:
                 await collection.update_one({"filename": b}, {"$addToSet": {"exact_duplicates": a}}, upsert=True)
-
         for a, b, sim in similar_files:
             if a in s3_files:
                 await collection.update_one(
@@ -101,7 +99,6 @@ class DuplicateFileDetector:
                     {"$addToSet": {"similar_files": {"filename": a, "similarity": sim}}},
                     upsert=True
                 )
-
 
     async def find_duplicates(self, similarity_threshold: int = 90) -> dict:
         try:

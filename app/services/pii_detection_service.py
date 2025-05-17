@@ -1,5 +1,6 @@
 import spacy
 import re
+import os
 from app.exceptions.custom_exceptions import PiiDetectionError
 from app.config.db import MongoDB
 
@@ -14,6 +15,7 @@ class PiiDetectionService:
             "PHONE": r"\b3\d{9}\b",
             "ADDRESS": r'\b(?:Calle|Cra|Carrera|Av|Avenida|Diagonal|Transversal|Cl|Kr|Tv|Trv)\.?\s*\d+[A-Z]?\s*(?:#|No\.?|N°)?\s*\d+[A-Z]?(?:\s*[-–]\s*\d+[A-Z]?)?'
         }
+        self.prefix = os.getenv("S3_PREFIX", "uploads/")
 
     async def detect_all_pii(self) -> list[dict]:
         try:
@@ -27,6 +29,50 @@ class PiiDetectionService:
             return final_results
         except Exception as e:
             raise PiiDetectionError(detail=f"Unexpected error during PII detection: {str(e)}")
+
+    async def detect_pii_by_filenames(self, filenames: list[str]) -> list[dict]:
+        try:
+            filenames_with_prefix = [
+                f"{self.prefix}{filename}" if not filename.startswith(self.prefix) else filename
+                for filename in filenames
+            ]
+            collection = self.db.document_analysis
+            documents = await collection.find({"filename": {"$in": filenames_with_prefix}}).to_list(None)
+            found_filenames = {doc.get("filename") for doc in documents}
+
+            final_results = []
+            for doc in documents:
+                try:
+                    filename = doc.get("filename")
+                    text = doc.get("text", "")
+
+                    pii_entities = self.extract_pii(text)
+
+                    await collection.update_one(
+                        {"_id": doc["_id"]},
+                        {"$set": {"pii_entities": pii_entities}}
+                    )
+                    final_results.append({
+                        "filename": filename,
+                        "pii_entities": pii_entities,
+                        "message": "Successfully detected"
+                    })
+                except Exception as e:
+                    final_results.append({
+                        "filename": doc.get("filename"),
+                        "pii_entities": [],
+                        "message": f"Skipped due to error: {str(e)}"
+                    })
+            missing_files = set(filenames_with_prefix) - found_filenames
+            for missing_filename in missing_files:
+                final_results.append({
+                    "filename": missing_filename,
+                    "pii_entities": [],
+                    "message": "File not found in the database"
+                })
+            return final_results
+        except Exception as e:
+            raise PiiDetectionError(detail=f"Unexpected error during PII detection by filenames: {str(e)}")
 
     async def _detect_and_update(self, doc: dict) -> dict | None:
         try:
@@ -64,6 +110,5 @@ class PiiDetectionService:
             all_ents = ents_spacy + ents_regex
             unique_list = list({(d["type"], d["value"]): d for d in all_ents}.values())
             return unique_list
-
         except Exception as e:
             raise PiiDetectionError(detail=f"Error extracting PII: {str(e)}")

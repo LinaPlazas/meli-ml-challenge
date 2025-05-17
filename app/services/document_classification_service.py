@@ -8,6 +8,7 @@ from nltk.tokenize import RegexpTokenizer
 from app.domain.entities.document import Document, ClassificationResult
 from app.exceptions.custom_exceptions import InvalidFileTypeError, DocumentClassificationError, ModelLoadingError
 from fastapi import HTTPException
+from typing import List
 from app.config.db import MongoDB
 
 nltk.download('stopwords')
@@ -26,6 +27,7 @@ class DocumentClassifier:
         self.tokenizer = RegexpTokenizer(r'\b\w+\b')
         self.stop_words = set(stopwords.words("spanish"))
         self.db= MongoDB()
+        self.prefix = os.getenv("S3_PREFIX", "uploads/")
 
     def preprocessing_text(self, text: str) -> str:
         if not text:
@@ -72,3 +74,50 @@ class DocumentClassifier:
             return final_results
         except Exception as e:
             raise DocumentClassificationError(detail=f"Unexpected error during document classification: {str(e)}")
+
+    async def classify_documents_by_filenames(self, filenames: List[str]) -> list[dict]:
+        try:
+            filenames_with_prefix = [f"{self.prefix}{filename}" if not filename.startswith(self.prefix) else filename for filename in filenames]
+            collection = self.db.document_analysis
+            documents = await collection.find({"filename": {"$in": filenames_with_prefix}}).to_list(None)
+            found_filenames = {doc.get("filename") for doc in documents}
+            final_results = []
+            for doc in documents:
+                try:
+                    filename = doc.get("filename")
+                    text = doc.get("text", "")
+                    document = Document(text=text)
+                    classification = self.classify_text(document)
+                    await collection.update_one(
+                        {"_id": doc["_id"]},
+                        {"$set": {
+                            "category": classification.category,
+                            "scores": classification.scores
+                        }}
+                    )
+                    final_results.append({
+                        "filename": filename,
+                        "category": classification.category,
+                        "scores": classification.scores,
+                        "message": "Successfully classified"
+                    })
+                except (InvalidFileTypeError, ValueError) as e:
+                    final_results.append({
+                        "filename": doc.get("filename"),
+                        "category": None,
+                        "scores": {},
+                        "message": f"Skipped due to error: {str(e)}"
+                    })
+            missing_files = set(filenames_with_prefix) - found_filenames
+            for missing_filename in missing_files:
+                final_results.append({
+                    "filename": missing_filename,
+                    "category": None,
+                    "scores": {},
+                    "message": "File not found in the database"
+                })
+
+            return final_results
+
+        except Exception as e:
+            raise DocumentClassificationError(detail=f"Unexpected error during classification by filenames: {str(e)}")
