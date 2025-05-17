@@ -39,3 +39,9 @@ class DuplicateDetectionError(Exception):
     def __init__(self, detail="Error detecting duplicates"):
         self.detail = detail
         self.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+
+
+class NormativeSectionError(Exception):
+    def __init__(self, detail="Error extracting normative sections"):
+        self.detail = detail
+        self.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR

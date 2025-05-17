@@ -3,8 +3,9 @@ from app.services.document_classification_service import DocumentClassifier
 from app.services.pii_detection_service import PiiDetectionService
 from app.services.duplicate_document_detector import DuplicateFileDetector
 from app.infrastructure.text_extractor import TextExtractor
+from app.services.normative_extractor_service import NormativeSectionService
 from app.domain.entities.document import Document
-from app.constants import messages
+from app.utils import messages
 from typing import List
 from app.exceptions.custom_exceptions import(
     FileUploadError,
@@ -14,7 +15,8 @@ from app.exceptions.custom_exceptions import(
     ModelLoadingError,
     PiiDetectionError,
     S3DownloadError,
-    DuplicateDetectionError)
+    DuplicateDetectionError,
+    NormativeSectionError)
 
 router = APIRouter(prefix="/documents")
 
@@ -22,6 +24,7 @@ text_extractor = TextExtractor()
 document_classifier = DocumentClassifier()
 pii_detection_service= PiiDetectionService()
 duplicate_file_detector=DuplicateFileDetector()
+normative_section_service=NormativeSectionService()
 
 @router.post("/extract-text")
 async def extract_text(files: List[UploadFile] = File(...)):
@@ -79,3 +82,19 @@ async def detect_duplicates():
         raise HTTPException(status_code=e.status_code, detail=e.detail)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{messages.FAILED_GENERIC}: {str(e)}")
+
+@router.post("/extract-normative-sections/")
+async def extract_normative_sections():
+    try:
+        data = await normative_section_service.extract_all_normative_sections()
+        return {
+            "message": messages.SUCCESS_GENERIC,
+            "data": data
+        }
+    except NormativeSectionError as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"{messages.FAILED_GENERIC}: {str(e)}"
+        )
