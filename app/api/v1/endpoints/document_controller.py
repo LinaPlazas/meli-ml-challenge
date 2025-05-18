@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException,Body
+from fastapi import APIRouter, UploadFile, File, HTTPException,Body, Depends
 from app.services.document_classification_service import DocumentClassifier
 from app.services.pii_detection_service import PiiDetectionService
 from app.services.duplicate_document_detector import DuplicateFileDetector
@@ -17,6 +17,8 @@ from app.exceptions.custom_exceptions import(
     S3DownloadError,
     DuplicateDetectionError,
     NormativeSectionError)
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from app.services.auth_service import AuthService
 
 router = APIRouter(prefix="/documents")
 
@@ -25,8 +27,21 @@ document_classifier = DocumentClassifier()
 pii_detection_service= PiiDetectionService()
 duplicate_file_detector=DuplicateFileDetector()
 normative_section_service=NormativeSectionService()
+auth_service = AuthService()
+security = HTTPBearer()
 
-@router.post("/extract-text")
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    payload = auth_service.decode_access_token(token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return payload.get("sub")
+
+@router.post("/extract-text", dependencies=[Depends(get_current_user)])
 async def extract_text(files: List[UploadFile] = File(...)):
     try:
         results = await text_extractor.process_files(files)
@@ -43,7 +58,7 @@ async def extract_text(files: List[UploadFile] = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{messages.FAILED_GENERIC} :{str(e)}")
 
-@router.post("/classify-text")
+@router.post("/classify-text", dependencies=[Depends(get_current_user)])
 async def classify_text(
     filenames: Optional[List[str]] = Body(
         default=None,
@@ -66,7 +81,7 @@ async def classify_text(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{messages.FAILED_GENERIC} :{str(e)}")
 
-@router.post("/detect-pii/")
+@router.post("/detect-pii/", dependencies=[Depends(get_current_user)])
 async def detect_pii(
     filenames: Optional[List[str]] = Body(
         default=None,
@@ -84,7 +99,7 @@ async def detect_pii(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{messages.FAILED_GENERIC} :{str(e)}")
 
-@router.post("/detect-documents-duplicates")
+@router.post("/detect-documents-duplicates", dependencies=[Depends(get_current_user)])
 async def detect_duplicates():
     try:
         resultado = await duplicate_file_detector.find_duplicates()
@@ -96,7 +111,7 @@ async def detect_duplicates():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{messages.FAILED_GENERIC}: {str(e)}")
 
-@router.post("/extract-normative-sections")
+@router.post("/extract-normative-sections", dependencies=[Depends(get_current_user)])
 async def extract_normative_sections(
     filenames: Optional[List[str]] = Body(
         default=None,

@@ -19,3 +19,5 @@ class MongoDB:
                     {"$set": doc},
                     upsert=True
                 )
+    async def get_user_from_db(self, username: str):
+        return await self.users.find_one({"username": username})
