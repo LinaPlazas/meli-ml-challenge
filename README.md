@@ -77,26 +77,58 @@ Una vez recolectados los documentos de entrenamiento, se procedió a construir e
 
 Una vez obtenido el dataset tabular, se procedió a realizar diferentes pruebas utilizando modelos de aprendizaje automático tradicional. Para ello, se implementó una etapa de vectorización del texto puesto que  Los modelos no entienden palabras directamente, por lo cual la vectorización convierte el texto en representaciones numéricas que los algoritmos de machine learning pueden procesar. Se inició con un modelo de regresión logística debido a su simplicidad y buen desempeño en problemas de clasificación de texto. Los datos se dividieron en un 80 % para entrenamiento y un 20 % para validación. A continuación, se presentan los resultados obtenidos:
 
-![matrizrl1](images/mc_regresion1.png)
-![metricas1](images/metricas_regresion1.png)
+<p align="center">
+  <img src="images/mc_regresion1.png" alt="matrizrl1" width="500"/>
+</p>
+
+<p align="center">
+  <img src="images/metricas_regresion1.png" alt="metricas1" width="500"/>
+</p>
+
 
 Aunque los resultados fueron prometedores, se decidió mejorar el preprocesamiento del texto incorporando una pequeña etapa de limpieza y tokenización del texto para optimizar la calidad de las características extraídas. Además se decidió evaluar varios modelos de clasificación como adicional a la regresión logistica como Lineal SVM, Random Forest, Multinomial Naive Bayes, con el fin de comparar y elegir el que brindara mejores métricas. A continuación se muestran los resultados de cada uno de los modelos con la limpieza de texto realizada
 
 Regresión Logistica
-![matrizrl2](images/mc_regresion2.png)
-![metricas2](images/metricas_regresion2.png)
+
+<p align="center">
+  <img src="images/mc_regresion2.png" alt="matrizrl2" width="500"/>
+</p>
+
+<p align="center">
+  <img src="images/metricas_regresion2.png" alt="metricas2" width="500"/>
+</p>
+
 
 SVM
-![matrizsvm](images/mc_SVM.png)
-![metricas3](images/metricas_SVM.png)
+
+<p align="center">
+  <img src="images/mc_svm.png" alt="matrizsvm" width="500"/>
+</p>
+
+<p align="center">
+  <img src="images/metricas_SVM.png" alt="metricas3" width="500"/>
+</p>
+
 
 Random Forest
-![matrizrandom](images/mc_randomforest.png)
-![metricas4](images/metricas_randomforest.png)
+
+<p align="center">
+  <img src="images/mc_randomforest.png" alt="matrizrandom" width="500"/>
+</p>
+
+<p align="center">
+  <img src="images/metricas_randomforest.png" alt="metricas4" width="500"/>
+</p>
 
 NB
-![matriznb](images/mc_NB.png)
-![metricas1](images/metricas_NB.png)
+
+<p align="center">
+  <img src="images/mc_NB.png" alt="matriznb" width="500"/>
+</p>
+
+<p align="center">
+  <img src="images/metricas_NB.png" alt="metricas1" width="500"/>
+</p>
 
 Como se puede observar, en términos generales y para todas las métricas (Accuracy, Precision, Recall y F1-score), el modelo Random Forest alcanzó un desempeño cercano al 97%. Por ello, fue seleccionado para su implementación en el módulo de clasificación de categorías.
 
