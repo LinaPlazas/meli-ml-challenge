@@ -86,7 +86,7 @@ Una vez obtenido el dataset tabular, se procedió a realizar diferentes pruebas 
 </p>
 
 
-Aunque los resultados fueron prometedores, se decidió mejorar el preprocesamiento del texto incorporando una pequeña etapa de limpieza y tokenización del texto para optimizar la calidad de las características extraídas. Además se decidió evaluar varios modelos de clasificación como adicional a la regresión logistica como Lineal SVM, Random Forest, Multinomial Naive Bayes, con el fin de comparar y elegir el que brindara mejores métricas. A continuación se muestran los resultados de cada uno de los modelos con la limpieza de texto realizada
+Aunque los resultados fueron prometedores, se decidió mejorar el preprocesamiento del texto incorporando una pequeña etapa de limpieza y tokenización del texto utilizando la libreria de procesamiento de lenguaje natural nltk para optimizar la calidad de las características extraídas. Además se decidió evaluar varios modelos de clasificación como adicional a la regresión logistica como Lineal SVM, Random Forest, Multinomial Naive Bayes, con el fin de comparar y elegir el que brindara mejores métricas. A continuación se muestran los resultados de cada uno de los modelos con la limpieza de texto realizada
 
 Regresión Logistica
 
@@ -135,4 +135,31 @@ Como se puede observar, en términos generales y para todas las métricas (Accur
 #### Implementación modulo clasificador
 
 Una vez obtenido el modelo clasificador, se desarrolló el módulo encargado de determinar la categoría que mejor se ajusta al documento. Para ello, se consulta en la base de datos el texto extraído de los PDFs y se realiza la clasificación correspondiente. Finalmente, el módulo almacena dos campos: la categoría asignada y los scores, es decir, los puntajes de probabilidad asociados a cada una de las categorías.
+
+### Detección de datos sensibles (PII)
+
+Para este módulo se utilizó la biblioteca spaCy para el reconocimiento de entidades nombradas (NER), específicamente para la categoría de nombres propios. De igual manera, se implementó el modelo es_core_news_lg de la misma biblioteca, el cual proporciona un análisis lingüístico del idioma español. Este modelo fue elegido por su mayor tamaño y precisión en comparación con otras versiones más livianas, en el siguiente enlace se pueden encontrar las métricas oficiales de la libreria [spacy](https://spacy.io/models/es).
+
+De igual manera, para los otros campos Número de identificación, correos electrónicos, número de telefono y direcciones, se utilizo un método más sencillo como lo son el reconocimiento de expresiones regulares, las cuales permiten identificar patrones específicos en los textos de manera eficiente y automatizada.
+
+Para este modulo se consulta el campo text de la base de datos, el cual se obtiene en el modulo de extracción de texto, se realiza el procesamiento para obtener las diferentes categorias explicadas anteriormente y se guardan los resultados en el campo pii_entities.
+
+### Identificación de documentos duplicados o similares
+
+Para este módulo se utilizó el método sugerido en la guía, checksum MD5, el cual permite identificar duplicados al generar un valor hash único para cada archivo o registro. De esta forma, al comparar los valores hash, es posible detectar fácilmente entradas idénticas y evitar el procesamiento redundante de datos. 
+
+Sin embargo, el problema que presenta chacksum MD5 es que solo permite identificar los archivos que son exactamente iguales, no identifica archivos similares o con pequeñas diferencias, por lo cual también se implementó la libreri ssdeep la cual utiliza hashing difuso (fuzzy hashing) para detectar similitudes entre archivos, permitiendo así identificar duplicados parciales o versiones ligeramente modificadas de un mismo archivo. 
+
+Para este módulo se requieren directamente los documentos en formato PDF, por lo cual se extraen todos los archivos almacenados en el bucket de S3 y se realizan las comparaciones correspondientes. Finalmente, se almacenan en la base de datos, en los campos extract_duplicates y similar_files, las listas de archivos duplicados y similares respectivamente.
+
+### Segmentación y extracción de secciones de interés.(Opcional)
+
+Para este módulo se emplearon expresiones regulares diseñadas específicamente para identificar y extraer secciones relevantes dentro de los documentos, tales como referencias a artículos, leyes, decretos, resoluciones y normativas vigentes. Estas expresiones permiten capturar patrones complejos de texto relacionados con disposiciones legales y regulatorias.
+
+No obstante, este módulo puede mejorarse significativamente aplicando técnicas avanzadas de procesamiento de lenguaje natural (PLN), como el uso de modelos de reconocimiento de entidades nombradas (NER), análisis semántico y aprendizaje automático, para lograr una extracción más precisa y contextualizada, especialmente en casos donde las expresiones regulares tradicionales puedan presentar limitaciones ante variaciones en el lenguaje o formatos menos estructurados.
+
+El funcionamiento es similar al módulo de detección de datos PII. Es decir, se consulta el campo text de la base de datos, el cual se obtiene en el módulo de extracción de texto. A partir de este texto, se realiza el procesamiento para identificar y extraer las secciones de interés. Finalmente, se almacenan en el campo normative_section una lista con las secciones relevantes de requisitos normativos encontradas en el texto, o se indica que no aplica en caso de no hallar ninguna sección pertinente.
+
+
+
    
