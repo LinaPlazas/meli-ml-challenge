@@ -100,9 +100,9 @@ async def detect_pii(
         raise HTTPException(status_code=500, detail=f"{messages.FAILED_GENERIC} :{str(e)}")
 
 @router.post("/detect-documents-duplicates", dependencies=[Depends(get_current_user)])
-async def detect_duplicates():
+async def detect_duplicates(similarity_threshold: int=90):
     try:
-        resultado = await duplicate_file_detector.find_duplicates()
+        resultado = await duplicate_file_detector.find_duplicates(similarity_threshold)
         return resultado
     except S3DownloadError as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)

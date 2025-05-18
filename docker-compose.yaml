@@ -11,7 +11,9 @@ services:
       - MODEL_PATH=${MODEL_PATH}
       - S3_PREFIX=${S3_PREFIX}
       - MONGO_URI=${MONGO_URI}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}   
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES= ${ACCESS_TOKEN_EXPIRE_MINUTES}
     ports:
       - "8000:8000"
     volumes:

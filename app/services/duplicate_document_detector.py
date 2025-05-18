@@ -100,7 +100,7 @@ class DuplicateFileDetector:
                     upsert=True
                 )
 
-    async def find_duplicates(self, similarity_threshold: int = 90) -> dict:
+    async def find_duplicates(self, similarity_threshold) -> dict:
         try:
             s3_files = self.download_files_from_s3()
             hashes = self.get_file_hashes(s3_files)

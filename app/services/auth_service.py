@@ -7,7 +7,7 @@ class AuthService:
     def __init__(self):
         self.secret_key = os.getenv("JWT_SECRET_KEY", "")
         self.algorithm = os.getenv("JWT_ALGORITHM", "HS256")
-        self.access_token_expire_minutes = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
+        self.access_token_expire_minutes = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     def verify_password(self, plain_password, hashed_password):
