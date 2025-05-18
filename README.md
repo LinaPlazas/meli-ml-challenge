@@ -160,6 +160,13 @@ No obstante, este módulo puede mejorarse significativamente aplicando técnicas
 
 El funcionamiento es similar al módulo de detección de datos PII. Es decir, se consulta el campo text de la base de datos, el cual se obtiene en el módulo de extracción de texto. A partir de este texto, se realiza el procesamiento para identificar y extraer las secciones de interés. Finalmente, se almacenan en el campo normative_section una lista con las secciones relevantes de requisitos normativos encontradas en el texto, o se indica que no aplica en caso de no hallar ninguna sección pertinente.
 
+### Autenticación y autorización
+
+Por último también se creo un módulo para definir el servicio de autenticación de la aplicación. De este modo, permite crear y validar tokens JWT, establecer su tiempo de expiración, y manejar la seguridad de contraseñas mediante hashing y verificación con bcrypt. Es utilizado para proteger los endpoints y asegurar el acceso autorizado a los recursos de la API.
+
+En la base de datos, dentro de la colección users, se almacenan los usuarios autorizados junto con sus contraseñas encriptadas. Durante el proceso de autenticación, la contraseña proporcionada por el usuario es comparada con la versión encriptada almacenada, utilizando un mecanismo de verificación seguro basado en bcrypt.
+
+Para este modulo se empleo 
 ## Pautas de uso
 
 La aplicación se encuentra desplegada en el siguiente enlace [api](http://meli-ml-challenge-313187819.us-east-2.elb.amazonaws.com/docs#/) donde se puede encontrar la documentación interactiva de los endpoints disponibles.Antes de interactuar con cualquiera de ellos, es necesario realizar un proceso de autenticación mediante JWT (JSON Web Token), el cual se ha implementado con el fin de proteger los recursos de la API y garantizar que solo usuarios autorizados puedan acceder a las funcionalidades expuestas.Se puede acceder a la api con las siguientes credenciales:
@@ -258,3 +265,13 @@ Al igual que los módulos de clasificación de texto y extracción de entidades,
 De igual manera, se registra en la base de datos el campo normative_section, en caso de no encontrar nada relacionado con reuisitos normativos coloca el texto NA
 
 ![normative3](images/normative3.png)
+
+## Referencias
+
+- [portal web oficial de datos abiertos del gobierno de Colombia](https://www.datos.gov.co/Gastos-Gubernamentales/SECOP-II-Contratos-Electr-nicos/jbjy-vk9h/about_data)
+- [spaCy - Modelos en Español](https://spacy.io/models/es)
+- [NLTK (Natural Language Toolkit)](https://www.nltk.org/)
+- [ssdeep – Fuzzy Hashing](https://ssdeep-project.github.io/ssdeep/index.html)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [JSON Web Tokens (JWT)](https://jwt.io/introduction)
+- [Bcrypt - Password Hashing](https://passlib.readthedocs.io/en/stable/narr/hash-tutorial.html#bcrypt)
