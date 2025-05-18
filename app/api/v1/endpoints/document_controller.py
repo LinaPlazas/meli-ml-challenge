@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException,Body, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException,Body, Depends, status
 from app.services.document_classification_service import DocumentClassifier
 from app.services.pii_detection_service import PiiDetectionService
 from app.services.duplicate_document_detector import DuplicateFileDetector
@@ -32,14 +32,21 @@ security = HTTPBearer()
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
-    payload = auth_service.decode_access_token(token)
-    if not payload:
+    try:
+        payload = auth_service.decode_access_token(token)
+        if not payload:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return payload.get("sub")
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail=f"Invalid token: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return payload.get("sub")
 
 @router.post("/extract-text", dependencies=[Depends(get_current_user)])
 async def extract_text(files: List[UploadFile] = File(...)):
