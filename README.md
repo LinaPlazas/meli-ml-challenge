@@ -78,11 +78,11 @@ Una vez recolectados los documentos de entrenamiento, se procedió a construir e
 Una vez obtenido el dataset tabular, se procedió a realizar diferentes pruebas utilizando modelos de aprendizaje automático tradicional. Para ello, se implementó una etapa de vectorización del texto puesto que  Los modelos no entienden palabras directamente, por lo cual la vectorización convierte el texto en representaciones numéricas que los algoritmos de machine learning pueden procesar. Se inició con un modelo de regresión logística debido a su simplicidad y buen desempeño en problemas de clasificación de texto. Los datos se dividieron en un 80 % para entrenamiento y un 20 % para validación. A continuación, se presentan los resultados obtenidos:
 
 <p align="center">
-  <img src="images/mc_regresion1.png" alt="matrizrl1" width="500"/>
+  <img src="images/mc_regresion1.png" alt="matrizrl1" width="300"/>
 </p>
 
 <p align="center">
-  <img src="images/metricas_regresion1.png" alt="metricas1" width="500"/>
+  <img src="images/metricas_regresion1.png" alt="metricas1" width="300"/>
 </p>
 
 
@@ -91,43 +91,43 @@ Aunque los resultados fueron prometedores, se decidió mejorar el preprocesamien
 Regresión Logistica
 
 <p align="center">
-  <img src="images/mc_regresion2.png" alt="matrizrl2" width="500"/>
+  <img src="images/mc_regresion2.png" alt="matrizrl2" width="300"/>
 </p>
 
 <p align="center">
-  <img src="images/metricas_regresion2.png" alt="metricas2" width="500"/>
+  <img src="images/metricas_regresion2.png" alt="metricas2" width="300"/>
 </p>
 
 
 SVM
 
 <p align="center">
-  <img src="images/mc_svm.png" alt="matrizsvm" width="500"/>
+  <img src="images/mc_svm.png" alt="matrizsvm" width="300"/>
 </p>
 
 <p align="center">
-  <img src="images/metricas_SVM.png" alt="metricas3" width="500"/>
+  <img src="images/metricas_SVM.png" alt="metricas3" width="300"/>
 </p>
 
 
 Random Forest
 
 <p align="center">
-  <img src="images/mc_randomforest.png" alt="matrizrandom" width="500"/>
+  <img src="images/mc_randomforest.png" alt="matrizrandom" width="300"/>
 </p>
 
 <p align="center">
-  <img src="images/metricas_randomforest.png" alt="metricas4" width="500"/>
+  <img src="images/metricas_randomforest.png" alt="metricas4" width="300"/>
 </p>
 
 NB
 
 <p align="center">
-  <img src="images/mc_NB.png" alt="matriznb" width="500"/>
+  <img src="images/mc_NB.png" alt="matriznb" width="300"/>
 </p>
 
 <p align="center">
-  <img src="images/metricas_NB.png" alt="metricas1" width="500"/>
+  <img src="images/metricas_NB.png" alt="metricas1" width="300"/>
 </p>
 
 Como se puede observar, en términos generales y para todas las métricas (Accuracy, Precision, Recall y F1-score), el modelo Random Forest alcanzó un desempeño cercano al 97%. Por ello, fue seleccionado para su implementación en el módulo de clasificación de categorías.
@@ -160,6 +160,137 @@ No obstante, este módulo puede mejorarse significativamente aplicando técnicas
 
 El funcionamiento es similar al módulo de detección de datos PII. Es decir, se consulta el campo text de la base de datos, el cual se obtiene en el módulo de extracción de texto. A partir de este texto, se realiza el procesamiento para identificar y extraer las secciones de interés. Finalmente, se almacenan en el campo normative_section una lista con las secciones relevantes de requisitos normativos encontradas en el texto, o se indica que no aplica en caso de no hallar ninguna sección pertinente.
 
+## Pautas de uso
 
+La aplicación se encuentra desplegada en el siguiente enlace [api](http://meli-ml-challenge-313187819.us-east-2.elb.amazonaws.com/docs#/) donde se puede encontrar la documentación interactiva de los endpoints disponibles.Antes de interactuar con cualquiera de ellos, es necesario realizar un proceso de autenticación mediante JWT (JSON Web Token), el cual se ha implementado con el fin de proteger los recursos de la API y garantizar que solo usuarios autorizados puedan acceder a las funcionalidades expuestas.Se puede acceder a la api con las siguientes credenciales:
 
-   
+Usuario:user <br>
+Contraseña:user
+
+#### Autenticación 
+ 
+Para realizar la autenticación se debe ejecutar el endpoint /api/v1/token, el cual solicita como parametros el usuario y contraseña anteriormente mencionados, a continuación se muestra un ejemplo de lo que debería salir en pantalla cuando la autenticación es exitosa
+
+<p align="center">
+  <img src="images/autenticacion.png" alt="autenticacion" width="300"/>
+</p>
+
+El resultado de este endpoint es un token de acceso (JWT), el cual debe ser copiado para poder realizar el proceso de autorización.
+
+#### Autorización
+
+En la parte superior izquierda de la interfaz se encuentra un botón con la palabra "Authorize". Al hacer clic en este botón, se despliega una ventana emergente que solicita como parámetro el token de acceso obtenido en el paso anterior. De la siguiente manera:
+
+<p align="center">
+  <img src="images/autorizacion.png" alt="autorizacion" width="300"/>
+</p>
+
+Una vez autorizado se podran ejecutar cada uno de los endpoints que se desarrollaron para la presente prueba
+
+#### Extractor de texto
+
+El primer endpoint a probar es el encargado de extraer el texto de diferentes archivos PDF. Este endpoint recibe como parámetro de entrada una lista de documentos en formato PDF. 
+
+Para efectos de prueba, se enviarán tres archivos PDF: certificado1.pdf, certificado12.pdf y resolucion1.pdf. Cabe resaltar que los archivos certificado1.pdf y certificado12.pdf son prácticamente iguales, salvo por una pequeña modificación en el texto realizada intencionalmente. A continuación, se muestra un ejemplo de cómo debe estructurarse la petición:
+
+<p align="center">
+  <img src="images/extract-text1.png" alt="extract-text1" width="300"/>
+</p>
+
+Si todo sale bien se deberia obtener lo siguiente:
+
+<p align="center">
+  <img src="images/extract-text2.png" alt="extract-text2" width="300"/>
+</p>
+
+De esta manera, luego de ejecutar este endpoint, los archivos enviados en la solicitud deberían cargarse correctamente en el bucket S3. Al mismo tiempo, en la base de datos se deberían almacenar tres registros, uno por cada archivo procesado. Cada registro debería contener, el nombre del archivo y el texto extraído del mismo, tal como se muestra a continuación
+
+<p align="center">
+  <img src="images/buckets3.png" alt="buckets3" width="300"/>
+</p>
+
+<p align="center">
+  <img src="images/bd.png" alt="bd" width="300"/>
+</p>
+
+#### Clasificador de texto
+
+Una vez se haya realizado el proceso de extracción de texto y los resultados se encuentren almacenados en la base de datos, el endpoint /classify-text se encarga de procesar dicho texto y determinar a qué categoría pertenece cada documento. Las categorías posibles son: contrato, certificado, resolución y factura.
+
+Para probar este endpoint, se puede enviar como parámetro una lista opcional de cadenas de texto (tipo list[str]), en la que se especifican los nombres de los archivos que se desean clasificar.
+
+Es importante resaltar que, si la lista se envía vacía ([]), el sistema procederá a clasificar todos los registros existentes en la base de datos, como se muestra a continuación:
+
+<p align="center">
+  <img src="images/classify_text1.png" alt="classify_text1" width="300"/>
+</p>
+
+<p align="center">
+  <img src="images/classify_text2.png" alt="classify_text2" width="300"/>
+</p>
+
+Además se generarán en la base de datos dos nuevos campos, categoria referente a la categoría asignada y los scores, es decir, los puntajes de probabilidad asociados a cada una de las categorías.
+
+<p align="center">
+  <img src="images/classify_text3.png" alt="classify_text3" width="300"/>
+</p>
+
+#### Detección de datos PII
+
+Este modulo al igual que el anterior, recibe como parámetro una lista opcional de cadenas de texto (tipo list[str]), en la que se especifican los nombres de los archivos en los que se desea realizar la detección de datos PII y de igual manera si la lista se encuentra vacia, va a realizar el proceso en todos los regstros de la base de datos:
+
+<p align="center">
+  <img src="images/detect_pii1.png" alt="detect_pii1" width="300"/>
+</p>
+
+<p align="center">
+  <img src="images/detect_pii2.png" alt="detect_pii2" width="300"/>
+</p>
+
+Se generaran en la base de datos el campo llamado pii_entities,el cual tendra una lista de las entidas encontradas con su respectivo valor:
+
+<p align="center">
+  <img src="images/detect_pii3.png" alt="detect_pii3" width="300"/>
+</p>
+
+#### Identificación de documentos duplicados o similares
+
+Este módulo realiza una comparación entre todos los documentos PDF almacenados en el bucket S3 con el objetivo de identificar similitudes entre ellos. Además, recibe como parámetro el valor de similarity_threshold, que representa el umbral a partir del cual se considera que dos documentos son similares.
+
+Para efectos de la prueba, se utilizará un valor de 90 como parámetro, lo cual indica que si dos documentos presentan una similitud del 90% o más, serán considerados como documentos similares.
+
+Por otro lado, los documentos serán identificados como duplicados únicamente si alcanzan un 100% de similitud, es decir, si son exactamente iguales en contenido.
+
+<p align="center">
+  <img src="images/duplicates1.png" alt="duplicates1" width="300"/>
+</p>
+
+<p align="center">
+  <img src="images/duplicates2.png" alt="duplicates2" width="300"/>
+</p>
+
+Como se puede observar en la imagen anterior, respecto a los tres archivos almacenados en el bucket S3, no se encontraron documentos duplicados, ya que ninguno alcanzó el 100% de similitud. Sin embargo, los documentos certificado1.pdf y certificado12.pdf presentan un 91% de similitud, por lo que fueron correctamente identificados como documentos similares según el umbral definido en la prueba.
+
+De este modo, también se almacenan los resultados en la base de datos en los campos extract_duplicates y similar_files, las listas de archivos duplicados y similares respectivamente.
+
+<p align="center">
+  <img src="images/duplicates3.png" alt="duplicates3" width="300"/>
+</p>
+
+#### Segmentación y extracción de secciones de interés
+
+Al igual que los módulos de clasificación de texto y extracción de entidades, este módulo recibe como parámetro una lista de nombres de archivos desde los cuales se desea extraer las secciones relacionadas con requisitos normativos. En caso de que la lista se envíe vacía ([]), el sistema interpretará que se debe realizar la extracción sobre todos los registros almacenados en la base de datos:
+
+<p align="center">
+  <img src="images/normative1.png" alt="normative1" width="300"/>
+</p>
+
+<p align="center">
+  <img src="images/normative2.png" alt="normative2" width="300"/>
+</p>
+
+De igual manera, se registra en la base de datos el campo normative_section, en caso de no encontrar nada relacionado con reuisitos normativos coloca el texto NA
+
+<p align="center">
+  <img src="images/normative3.png" alt="normative3" width="300"/>
+</p>
