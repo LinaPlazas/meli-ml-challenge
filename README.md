@@ -1,7 +1,7 @@
 <h1 align="center">Meli ML Chanllenge 🚀 </h1> 
 
 ## Resumen: 
-El presente proyecto tiene como fin plantear una posible solución para el reto técnico planteado, el cual consiste en diseñar y construir un sistema que realice las siguientes tareas a partir de diferentes documentos en formato pdf:<br> 
+El presente proyecto tiene como fin plantear una posible solución para el reto técnico de ML engineer, el cual consiste en diseñar y construir un sistema que realice las siguientes tareas a partir de diferentes documentos en formato pdf:<br> 
 
 ***1. Clasificación automática por tipo de documento:*** <br>
 
@@ -58,7 +58,7 @@ Para abordar el problema planteado, el primer paso realizado fue lograr la extra
 
 De igual manera para enfrentar el problema de el procesamiento asincronico se utilizo start_document_text_detection, esta opción permite iniciar múltiples procesos de extracción en paralelo sin necesidad de esperar a que cada uno finalice antes de continuar con el siguiente.
 
-Para gestionar este procesamiento concurrente, se implementó una estrategia que permite lanzar varios trabajos de análisis al mismo tiempo, hacer seguimiento de cada uno de ellos de forma no bloqueante, y finalmente recolectar los resultados una vez completados. Una vez obtenidos los textos de los archivos pdf, se almacenan en la base de datos, lo que permite su posterior uso en tareas como clasificación automática, detección de información sensible o análisis de secciones normativas.
+Para gestionar este procesamiento concurrente, se implementó una estrategia que permite lanzar varios trabajos de análisis al mismo tiempo, hacer seguimiento de cada uno de ellos de forma no bloqueante, y finalmente recolectar los resultados una vez completados. El módulo recibe como entrada los archivos pdf, los sube a bucket de s3 y luego invoca extract para realizar el procesamiento, una vez obtenidos los textos de los archivos pdf, se almacenan en la base de datos, lo que permite su posterior uso en tareas como clasificación automática, detección de información sensible o análisis de secciones normativas.
 
 ### Clasificación en categorias
 
@@ -73,7 +73,7 @@ Contratos:43 <br>
 Resoluciones: 56 <br>
 Facturas: 37 <br>
 
-Una vez recolectados los documentos de entrenamiento, se procedió a construir el dataset en formato tabular, con el fin de utilizarlo como entrada para los modelos,Este proceso se llevó a cabo mediante un notebook de Jupyter, ubicado en la ruta notebooks/create_tabular_dataset.py, la salida fue un archivo CSV que contiene los campos: filename, label (etiqueta correspondiente a la clase del documento) y text (texto extraído del PDF utilizando Amazon Textract) y se encuentra en la ruta notebooks/data/dataset.csv
+Una vez recolectados los documentos de entrenamiento, se procedió a construir el dataset en formato tabular, con el fin de utilizarlo como entrada para los modelos, este proceso se llevó a cabo mediante un notebook de Jupyter, ubicado en la ruta notebooks/create_tabular_dataset.py, la salida fue un archivo CSV que contiene los campos: filename, label (etiqueta correspondiente a la clase del documento) y text (texto extraído del PDF utilizando Amazon Textract) y se encuentra en la ruta notebooks/data/dataset.csv
 
 Una vez obtenido el dataset tabular, se procedió a realizar diferentes pruebas utilizando modelos de aprendizaje automático tradicional. Para ello, se implementó una etapa de vectorización del texto puesto que  Los modelos no entienden palabras directamente, por lo cual la vectorización convierte el texto en representaciones numéricas que los algoritmos de machine learning pueden procesar. Se inició con un modelo de regresión logística debido a su simplicidad y buen desempeño en problemas de clasificación de texto. Los datos se dividieron en un 80 % para entrenamiento y un 20 % para validación. A continuación, se presentan los resultados obtenidos:
 
@@ -86,7 +86,7 @@ Una vez obtenido el dataset tabular, se procedió a realizar diferentes pruebas 
 </p>
 
 
-Aunque los resultados fueron prometedores, se decidió mejorar el preprocesamiento del texto incorporando una pequeña etapa de limpieza y tokenización del texto utilizando la libreria de procesamiento de lenguaje natural nltk para optimizar la calidad de las características extraídas. Además se decidió evaluar varios modelos de clasificación como adicional a la regresión logistica como Lineal SVM, Random Forest, Multinomial Naive Bayes, con el fin de comparar y elegir el que brindara mejores métricas. A continuación se muestran los resultados de cada uno de los modelos con la limpieza de texto realizada
+Aunque los resultados fueron prometedores, se decidió mejorar el preprocesamiento del texto incorporando una pequeña etapa de limpieza y tokenización del texto utilizando la libreria de procesamiento de lenguaje natural nltk para optimizar la calidad de las características extraídas. Además se decidió evaluar varios modelos de clasificación adicional a la regresión logistica como Lineal SVM, Random Forest, Multinomial Naive Bayes, con el fin de comparar y elegir el que brindara mejores métricas. A continuación se muestran los resultados de cada uno de los modelos con la limpieza de texto realizada
 
 Regresión Logistica
 
@@ -146,7 +146,7 @@ Para este modulo se consulta el campo text de la base de datos, el cual se obtie
 
 ### Identificación de documentos duplicados o similares
 
-Para este módulo se utilizó el método sugerido en la guía, checksum MD5, el cual permite identificar duplicados al generar un valor hash único para cada archivo o registro. De esta forma, al comparar los valores hash, es posible detectar fácilmente entradas idénticas y evitar el procesamiento redundante de datos. 
+Para este módulo se utilizó el método sugerido en la guía, checksum MD5, el cual permite identificar duplicados al generar un valor hash único para cada archivo o registro. De esta forma, al comparar los valores hash, es posible detectar fácilmente entradas idénticas. 
 
 Sin embargo, el problema que presenta chacksum MD5 es que solo permite identificar los archivos que son exactamente iguales, no identifica archivos similares o con pequeñas diferencias, por lo cual también se implementó la libreri ssdeep la cual utiliza hashing difuso (fuzzy hashing) para detectar similitudes entre archivos, permitiendo así identificar duplicados parciales o versiones ligeramente modificadas de un mismo archivo. 
 
@@ -164,9 +164,8 @@ El funcionamiento es similar al módulo de detección de datos PII. Es decir, se
 
 Por último también se creo un módulo para definir el servicio de autenticación de la aplicación. De este modo, permite crear y validar tokens JWT, establecer su tiempo de expiración, y manejar la seguridad de contraseñas mediante hashing y verificación con bcrypt. Es utilizado para proteger los endpoints y asegurar el acceso autorizado a los recursos de la API.
 
-En la base de datos, dentro de la colección users, se almacenan los usuarios autorizados junto con sus contraseñas encriptadas. Durante el proceso de autenticación, la contraseña proporcionada por el usuario es comparada con la versión encriptada almacenada, utilizando un mecanismo de verificación seguro basado en bcrypt.
+En la base de datos, dentro de la colección users, se almacenan los usuarios autorizados junto con sus contraseñas encriptadas. Durante el proceso de autenticación, la contraseña proporcionada por el usuario es comparada con la versión encriptada almacenada.
 
-Para este modulo se empleo 
 ## Pautas de uso
 
 La aplicación se encuentra desplegada en el siguiente enlace [api](http://meli-ml-challenge-313187819.us-east-2.elb.amazonaws.com/docs#/) donde se puede encontrar la documentación interactiva de los endpoints disponibles.Antes de interactuar con cualquiera de ellos, es necesario realizar un proceso de autenticación mediante JWT (JSON Web Token), el cual se ha implementado con el fin de proteger los recursos de la API y garantizar que solo usuarios autorizados puedan acceder a las funcionalidades expuestas.Se puede acceder a la api con las siguientes credenciales:
